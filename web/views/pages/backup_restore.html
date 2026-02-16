@@ -1,0 +1,375 @@
+<style>
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    .progress-bar {
+        height: 6px;
+        border-radius: 3px;
+        background-color: #e2e8f0;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        background-color: #1e40af;
+        transition: width 0.3s ease;
+    }
+    .backup-card {
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+    .backup-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
+    }
+
+    /* Responsive Backup List Styles */
+    .backup-table {
+        width: 100%;
+        min-width: 600px;
+    }
+    .backup-table th, .backup-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .backup-table th {
+        font-weight: 600;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .action-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .action-btn i { margin-right: 4px; }
+
+    /* Modal Styles (Scoped) */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 60;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+    }
+    /* Override flex display for modals when active */
+    .modal.active { display: flex !important; }
+
+    .modal-content {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 16px;
+        width: 95%;
+        max-width: 450px;
+        position: relative;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        animation: scaleUp 0.2s ease-out;
+    }
+    @keyframes scaleUp {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Media Queries */
+    @media (max-width: 768px) {
+        .backup-grid { display: none; }
+        .backup-table-container { display: block; overflow-x: auto; }
+    }
+    @media (min-width: 769px) {
+        .backup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .backup-table-container { display: none; }
+    }
+</style>
+
+<div class="fade-in">
+    <div class="bg-white p-6 rounded-xl shadow mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Status Sistem</h2>
+                <div class="flex items-center mt-2">
+                    <span class="status-indicator bg-green-500"></span>
+                    <span class="text-green-600 font-medium">Database Online</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Penyimpanan Digunakan</p>
+                    <p class="font-semibold">{{ .TotalSizeMB }} MB / 10 GB</p>
+                </div>
+                <div class="w-32">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ .ProgressPercent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col">
+            <div class="flex items-center mb-4">
+                <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                    <i class="fas fa-save text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Backup Manual</h3>
+                    <p class="text-sm text-gray-500">Buat backup sekarang</p>
+                </div>
+            </div>
+            <form id="form-create-backup" onsubmit="createManualBackup(event)" class="space-y-4 flex-grow flex flex-col justify-between">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama File Backup</label>
+                    <input type="text" name="filename" id="backup-name" placeholder="backup-data-koperasi"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+                </div>
+                <button type="submit" id="btn-create" class="w-full py-3 mt-4 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center">
+                    <i class="fas fa-download mr-2"></i> Buat Backup
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col">
+            <div class="flex items-center mb-4">
+                <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                    <i class="fas fa-file-upload text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Restore Manual</h3>
+                    <p class="text-sm text-gray-500">Upload file dari komputer</p>
+                </div>
+            </div>
+            <form id="form-upload-restore" onsubmit="uploadAndRestore(event)" class="space-y-4 flex-grow flex flex-col justify-between">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File (.sql)</label>
+                    <input type="file" name="backup_file" id="upload-file" accept=".sql" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+                </div>
+                <button type="submit" id="btn-upload-restore" class="w-full py-3 mt-4 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition flex items-center justify-center">
+                    <i class="fas fa-upload mr-2"></i> Upload & Restore
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col">
+            <div class="flex items-center mb-4">
+                <div class="bg-green-100 p-3 rounded-lg mr-4">
+                    <i class="fas fa-clock text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Backup Otomatis</h3>
+                    <p class="text-sm text-gray-500">Konfigurasi jadwal</p>
+                </div>
+            </div>
+            <div class="space-y-4 flex-grow flex flex-col justify-between">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Frekuensi & Waktu</label>
+                    <div class="flex gap-2">
+                        <select id="auto-frequency" class="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                            <option>Harian</option>
+                            <option selected>Mingguan</option>
+                        </select>
+                        <input type="time" id="auto-time" value="02:00" class="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+                    </div>
+                </div>
+                <button class="w-full py-3 mt-4 bg-secondary text-white rounded-lg font-medium hover:bg-blue-600 transition" onclick="alert('Pengaturan Tersimpan (Dummy)')">
+                    <i class="fas fa-cog mr-2"></i> Simpan Pengaturan
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+            <h2 class="text-lg font-semibold text-gray-800">Daftar Backup</h2>
+            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                <span class="status-indicator bg-green-500"></span>
+                <span>{{ len .Backups }} backup tersedia</span>
+            </div>
+        </div>
+
+        <div id="backup-list" class="backup-grid">
+            {{ range .Backups }}
+            <div class="backup-card bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <h4 class="font-medium text-gray-800" style="word-break: break-all;">{{ .NamaFile }}</h4>
+                        <p class="text-sm text-gray-500">{{ .CreatedAt.Format "02 Jan 2006, 15:04" }}</p>
+                    </div>
+                    <div class="action-buttons">
+                        <a href="/backup/download/{{ .NamaFile }}" class="action-btn bg-primary text-white hover:bg-blue-700 transition" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button class="action-btn bg-success text-white hover:bg-green-700 transition" onclick="showRestoreModal('{{ .NamaFile }}')" title="Restore">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="action-btn bg-danger text-white hover:bg-red-700 transition" onclick="deleteBackup('{{ .NamaFile }}')" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {{ else }}
+            <p class="text-gray-500 italic py-4">Belum ada file backup.</p>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentBackupFile = null;
+
+    // Helper Functions
+    async function createManualBackup() {
+        const backupName = document.getElementById('backup-name').value;
+        const formData = new FormData();
+        formData.append("filename", backupName);
+
+        try {
+            const res = await fetch('/backup/create', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Berhasil: " + data.message);
+                location.reload();
+            } else {
+                alert("Gagal: " + data.error);
+            }
+        } catch (error) {
+            alert("Error: Gagal menghubungi server.");
+        }
+    }
+
+    async function uploadAndRestore(e) {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('upload-file');
+        if (fileInput.files.length === 0) return alert("Pilih file .sql terlebih dahulu!");
+
+        if (!confirm("⚠️ PERINGATAN! Database saat ini akan ditimpa dengan data dari file yang Anda upload. Yakin ingin melanjutkan?")) return;
+
+        const btn = document.getElementById('btn-upload-restore');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Merestore...';
+
+        const formData = new FormData(e.target);
+
+        try {
+            const res = await fetch('/backup/upload-restore', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert("✅ " + data.message);
+                location.reload();
+            } else {
+                alert("❌ Gagal: " + (data.error || "Kesalahan server"));
+            }
+        } catch (error) {
+            alert("⚠️ Kesalahan Jaringan/Server.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload mr-2"></i> Upload & Restore';
+            e.target.reset();
+        }
+    }
+
+    function saveAutoBackupSettings() {
+        alert('Pengaturan backup otomatis berhasil disimpan!');
+    }
+
+    function downloadBackup(filename) {
+        window.location.href = `/backup/download/${filename}`;
+    }
+
+    // Modal Logic
+    function showRestoreModal(filename) {
+        currentBackupFile = filename;
+        document.getElementById('restore-filename').value = filename;
+        document.getElementById('restore-modal').classList.add('active');
+    }
+
+    function hideRestoreModal() {
+        document.getElementById('restore-modal').classList.remove('active');
+    }
+
+    async function confirmRestore() {
+        const formData = new FormData();
+        formData.append("filename", currentBackupFile);
+
+        try {
+            const res = await fetch('/backup/restore', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Berhasil: " + data.message);
+                hideRestoreModal();
+            } else {
+                alert("Gagal: " + data.error);
+            }
+        } catch (error) {
+            alert("Error: Gagal menghubungi server.");
+        }
+    }
+
+    function deleteBackup(filename) {
+        currentBackupFile = filename;
+        document.getElementById('delete-modal').classList.add('active');
+    }
+
+    function hideDeleteModal() {
+        document.getElementById('delete-modal').classList.remove('active');
+    }
+
+    async function confirmDeleteBackup() {
+        const formData = new URLSearchParams();
+        formData.append("filename", currentBackupFile);
+
+        try {
+            const res = await fetch('/backup/delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            });
+            const data = await res.json();
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert("Gagal: " + data.error);
+            }
+        } catch (error) {
+            alert("Error: Gagal menghubungi server.");
+        }
+    }
+
+    // Close Modals on Outside Click
+    window.onclick = function(event) {
+        const restoreModal = document.getElementById('restore-modal');
+        const deleteModal = document.getElementById('delete-modal');
+        if (event.target === restoreModal) hideRestoreModal();
+        if (event.target === deleteModal) hideDeleteModal();
+    };
+</script>

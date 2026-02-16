@@ -1,0 +1,359 @@
+<style>
+    .stock-card { transition: all 0.2s ease; border: 1px solid #e2e8f0; }
+    .stock-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
+    .stock-status { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .history-item { border-left: 4px solid #cbd5e1; transition: background-color 0.2s; }
+    .history-item:hover { background-color: #f8fafc; }
+    .history-item.masuk { border-left-color: #10b981; }
+    .history-item.keluar { border-left-color: #ef4444; }
+
+    /* Modal Styles */
+    .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal.active { display: flex !important; }
+    .modal-content { background-color: white; padding: 1.5rem; border-radius: 16px; width: 95%; max-width: 500px; animation: scaleUp 0.2s ease-out; }
+    @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+</style>
+
+<div class="fade-in">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow border-b-4 border-green-500">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg mr-4">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Produk Tersedia</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ .StatAvailable }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow border-b-4 border-yellow-400">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg mr-4">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Stok Rendah</p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ .StatLow }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow border-b-4 border-red-500">
+            <div class="flex items-center">
+                <div class="p-3 bg-red-100 rounded-lg mr-4">
+                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Stok Habis</p>
+                    <p class="text-2xl font-bold text-red-600">{{ .StatOut }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4 mb-8">
+        <div class="filter-section flex flex-col md:flex-row items-end gap-4">
+            <div class="flex-1 w-full">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cari Produk</label>
+                <div class="relative">
+                    <input type="text" id="search-input-stock" placeholder="Nama produk, kategori..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+
+            <div class="w-full md:w-auto min-w-[150px]">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status Stok</label>
+                <select id="stock-status-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="">Semua Status</option>
+                    <option value="available">Tersedia</option>
+                    <option value="low">Stok Rendah</option>
+                    <option value="out">Habis</option>
+                </select>
+            </div>
+
+            <div class="w-full md:w-auto flex gap-2">
+                <button class="px-4 py-2 bg-red-100 text-red-600 border border-red-200 rounded-lg hover:bg-red-200 transition text-sm flex-1 md:flex-none flex items-center justify-center gap-2"
+                        onclick="openStockModal('reduce')">
+                    <i class="fas fa-minus-circle"></i> Kurang
+                </button>
+                <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-sm flex-1 md:flex-none flex items-center justify-center gap-2"
+                        onclick="openStockModal('add')">
+                    <i class="fas fa-plus-circle"></i> Tambah
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stock-container" class="stock-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {{ range .Products }}
+        <div class="stock-card bg-white rounded-xl p-5" data-category="{{ .CategoryUID }}" data-name="{{ .NamaProducts }}">
+            <div class="relative mb-4">
+                <div class="w-full h-40 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                    {{ if .Image }}
+                    <img src="/uploads/{{ .Image }}" alt="{{ .NamaProducts }}" class="w-full h-full object-cover">
+                    {{ else }}
+                    <i class="fas fa-box text-gray-300 text-4xl"></i>
+                    {{ end }}
+                </div>
+            </div>
+
+            <h3 class="font-semibold text-gray-800 mb-1 truncate" title="{{ .NamaProducts }}">{{ .NamaProducts }}</h3>
+            <p class="text-xs text-gray-500 mb-3 capitalize">{{ .CategoryUID }}</p>
+
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-sm">Stok: <span class="font-bold text-gray-800">{{ .Stock }}</span></span>
+
+                {{ if le .Stock 0 }}
+                <span class="stock-status bg-red-500 text-white" data-status="out">Habis</span>
+                {{ else if le .Stock .StockMin }}
+                <span class="stock-status bg-yellow-500 text-white" data-status="low">Rendah</span>
+                {{ else }}
+                <span class="stock-status bg-green-500 text-white" data-status="available">Tersedia</span>
+                {{ end }}
+            </div>
+
+            <div class="flex justify-between items-center border-t pt-3 mt-2 gap-2">
+                <button class="flex-1 text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 px-2 py-1.5 rounded text-sm font-medium transition text-center"
+                        onclick="openStockModal('reduce', '{{ .ProductsUID }}', '{{ .Stock }}')">
+                    <i class="fas fa-minus mr-1"></i> Kurang
+                </button>
+                <button class="flex-1 text-primary bg-blue-50 hover:bg-blue-100 border border-blue-100 px-2 py-1.5 rounded text-sm font-medium transition text-center"
+                        onclick="openStockModal('add', '{{ .ProductsUID }}', '{{ .Stock }}')">
+                    <i class="fas fa-plus mr-1"></i> Tambah
+                </button>
+            </div>
+        </div>
+        {{ else }}
+        <div class="col-span-full text-center py-10 text-gray-500">
+            <i class="fas fa-box-open text-4xl mb-3"></i>
+            <p>Belum ada produk. Silakan tambahkan produk di menu Manajemen Produk.</p>
+        </div>
+        {{ end }}
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-semibold text-gray-800"><i class="fas fa-history mr-2 text-primary"></i> Riwayat Stok Terakhir</h2>
+        </div>
+        <div class="space-y-3">
+            {{ range .History }}
+            <div class="history-item {{ .Tipe }} p-4 rounded-lg">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold text-white
+                                {{ if eq .Tipe "masuk" }}bg-green-500{{ else }}bg-red-500{{ end }}">
+                            {{ .Tipe }}
+                            </span>
+                            <h4 class="font-medium text-gray-800 text-sm">{{ .NamaProduk }}</h4>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Jumlah: <span class="font-bold">{{ .Jumlah }}</span> | Petugas: {{ .NamaUser }}
+                        </p>
+                        {{ if .Catatan }}
+                        <p class="text-xs text-gray-500 italic mt-1">"{{ .Catatan }}"</p>
+                        {{ end }}
+                    </div>
+                    <span class="text-xs text-gray-400 whitespace-nowrap">{{ .CreatedAt.Format "02 Jan 15:04" }}</span>
+                </div>
+            </div>
+            {{ else }}
+            <p class="text-gray-500 text-sm text-center py-4">Belum ada riwayat mutasi stok.</p>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+<div id="stock-modal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="modal-title" class="text-lg font-semibold text-gray-800">Atur Stok</h3>
+            <button onclick="closeStockModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="stock-form" onsubmit="submitStockForm(event)">
+            <input type="hidden" id="transaction-type" value="add">
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Pilih Produk *</label>
+                <select name="product_uid" id="select-product" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
+                        onchange="updateCurrentStockInfo(this)">
+                    <option value="" data-stock="-">-- Pilih Produk --</option>
+                    {{ range .Products }}
+                    <option value="{{ .ProductsUID }}" data-stock="{{ .Stock }}">{{ .NamaProducts }}</option>
+                    {{ end }}
+                </select>
+            </div>
+
+            <div id="current-stock-info" class="mb-4 bg-gray-50 border border-gray-200 p-3 rounded-lg flex justify-between items-center">
+                <span class="text-sm text-gray-600">Stok Saat Ini:</span>
+                <span id="current-stock-display" class="font-bold text-gray-800 text-lg">-</span>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Jumlah <span class="text-red-500">*</span></label>
+                <input type="number" name="quantity" min="1" placeholder="0" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"/>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Catatan</label>
+                <textarea name="notes" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
+                          placeholder="Contoh: Barang Rusak / Pembelian Baru"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="closeStockModal()" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium">Batal</button>
+                <button type="submit" id="btn-submit-stock" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition text-sm font-bold">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- 1. GLOBAL FUNCTIONS ---
+
+    window.openStockModal = function(mode, uid = null, currentStock = null) {
+        const modal = document.getElementById('stock-modal');
+        const form = document.getElementById('stock-form');
+        const select = document.getElementById('select-product');
+        const display = document.getElementById('current-stock-display');
+
+        // Element yang berubah dinamis
+        const title = document.getElementById('modal-title');
+        const btn = document.getElementById('btn-submit-stock');
+        const typeInput = document.getElementById('transaction-type');
+
+        form.reset();
+        typeInput.value = mode;
+
+        // Atur Tampilan berdasarkan Mode
+        if (mode === 'reduce') {
+            title.textContent = "Kurangi Stok (Barang Keluar)";
+            title.className = "text-lg font-bold text-red-600";
+
+            btn.innerHTML = '<i class="fas fa-minus-circle mr-2"></i> Kurangi Stok';
+            btn.className = "px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg shadow-red-200 transition text-sm font-bold";
+        } else {
+            title.textContent = "Tambah Stok (Barang Masuk)";
+            title.className = "text-lg font-bold text-blue-800";
+
+            btn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i> Tambah Stok';
+            btn.className = "px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition text-sm font-bold";
+        }
+
+        // Logic Pre-fill data
+        if (uid) {
+            select.value = uid;
+            display.textContent = currentStock;
+            setTimeout(() => {
+                const qty = document.querySelector('input[name="quantity"]');
+                if(qty) qty.focus();
+            }, 100);
+        } else {
+            select.value = "";
+            display.textContent = "-";
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    };
+
+    window.closeStockModal = function() {
+        const modal = document.getElementById('stock-modal');
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    };
+
+    window.updateCurrentStockInfo = function(el) {
+        const stock = el.options[el.selectedIndex].getAttribute('data-stock');
+        document.getElementById('current-stock-display').textContent = stock || '-';
+    };
+
+    // --- 2. SUBMIT FORM HANDLER ---
+    window.submitStockForm = async function(event) {
+        event.preventDefault();
+
+        const btn = document.getElementById('btn-submit-stock');
+        const originalText = btn.innerHTML;
+        const mode = document.getElementById('transaction-type').value;
+
+        // Tentukan URL tujuan berdasarkan mode
+        const url = mode === 'reduce' ? '/stock/reduce' : '/stock/add';
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.quantity = parseInt(data.quantity);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(mode === 'reduce' ? '✅ Stok berhasil dikurangi!' : '✅ Stok berhasil ditambahkan!');
+                location.reload();
+            } else {
+                alert('❌ Gagal: ' + (result.error || 'Terjadi kesalahan pada server'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('⚠️ Terjadi kesalahan koneksi');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
+
+    // --- 3. FILTER LOGIC ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search-input-stock');
+        const statusSelect = document.getElementById('stock-status-filter');
+
+        function runFilter() {
+            const term = searchInput.value.toLowerCase();
+            const status = statusSelect.value;
+
+            document.querySelectorAll('.stock-card').forEach(card => {
+                const name = card.getAttribute('data-name').toLowerCase();
+                const badge = card.querySelector('.stock-status');
+                const cardStatus = badge ? badge.getAttribute('data-status') : '';
+
+                const matchName = name.includes(term);
+                const matchStatus = status === '' || cardStatus === status;
+
+                if (matchName && matchStatus) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        if(searchInput) searchInput.addEventListener('input', runFilter);
+        if(statusSelect) statusSelect.addEventListener('change', runFilter);
+    });
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('stock-modal');
+        if (event.target === modal) {
+            window.closeStockModal();
+        }
+    };
+</script>

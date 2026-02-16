@@ -1,0 +1,502 @@
+
+
+<style>
+    .chart-placeholder {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-radius: 12px;
+    }
+    .print-btn {
+        transition: all 0.2s ease;
+        border: 2px solid #e2e8f0;
+    }
+    .print-btn:hover {
+        transform: translateY(-2px);
+        border-color: #1e40af;
+        background-color: #eff6ff;
+    }
+    /* Modal Styles (Scoped for Reports) */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 60;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        overflow-y: auto;
+    }
+    .modal-content {
+        background-color: white;
+        margin: 5vh auto;
+        padding: 1.5rem;
+        border-radius: 16px;
+        width: 95%;
+        max-width: 500px;
+        position: relative;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        animation: slideDown 0.3s ease-out;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 768px) {
+        .print-buttons { grid-template-columns: repeat(2, 1fr) !important; }
+    }
+    @media (max-width: 480px) {
+        .print-buttons { grid-template-columns: 1fr !important; }
+    }
+</style>
+
+<div class="fade-in">
+    <div class="bg-white rounded-xl shadow p-4 mb-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Cetak Laporan</h2>
+        <div class="print-buttons grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+            <button class="print-btn p-3 rounded-lg text-center font-medium bg-white" onclick="showPeriodModal('daily')">
+                <i class="fas fa-calendar-day text-xl mb-1 text-blue-600"></i>
+                <p class="text-sm text-gray-700">Per Hari</p>
+            </button>
+            <button class="print-btn p-3 rounded-lg text-center font-medium bg-white" onclick="showPeriodModal('weekly')">
+                <i class="fas fa-calendar-week text-xl mb-1 text-green-600"></i>
+                <p class="text-sm text-gray-700">Per Minggu</p>
+            </button>
+            <button class="print-btn p-3 rounded-lg text-center font-medium bg-white" onclick="showPeriodModal('monthly')">
+                <i class="fas fa-calendar text-xl mb-1 text-purple-600"></i>
+                <p class="text-sm text-gray-700">Per Bulan</p>
+            </button>
+            <button class="print-btn p-3 rounded-lg text-center font-medium bg-white" onclick="showProductModal()">
+                <i class="fas fa-box text-xl mb-1 text-orange-500"></i>
+                <p class="text-sm text-gray-700">Per Produk</p>
+            </button>
+            <button class="print-btn p-3 rounded-lg text-center font-medium bg-white" onclick="showProfitLossModal()">
+                <i class="fas fa-file-invoice-dollar text-xl mb-1 text-red-500"></i>
+                <p class="text-sm text-gray-700">Untung Rugi</p>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg mr-4">
+                    <i class="fas fa-shopping-cart text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Total Penjualan</p>
+                    <p class="text-2xl font-bold text-gray-800">Rp {{ printf "%.0f" .TotalPenjualan }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                    <i class="fas fa-file-invoice-dollar text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Laba Bersih</p>
+                    <p class="text-2xl font-bold text-success">Rp {{ printf "%.0f" .LabaBersih }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg mr-4">
+                    <i class="fas fa-boxes text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Jumlah Transaksi</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ .JumlahTransaksi }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg mr-4">
+                    <i class="fas fa-users text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Pelanggan Aktif</p>
+                    <p class="text-2xl font-bold text-gray-800">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-semibold text-gray-800">Tren Penjualan (14 Hari)</h2>
+            </div>
+            <div class="w-full h-64 relative">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-semibold text-gray-800">Laporan Untung Rugi Harian</h2>
+            </div>
+            <div class="w-full h-64 relative">
+                <canvas id="profitLossChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow border border-gray-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <h2 class="text-lg font-semibold text-gray-800">Laporan Laba Rugi Detail</h2>
+            <div class="flex space-x-2 mt-4 sm:mt-0">
+                <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm" onclick="exportReportTable('excel')">
+                    <i class="fas fa-file-excel mr-2"></i> Excel
+                </button>
+                <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm" onclick="exportReportTable('pdf')">
+                    <i class="fas fa-file-pdf mr-2"></i> PDF
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                <tr class="text-left text-gray-500 text-sm border-b">
+                    <th class="pb-3">Kategori</th>
+                    <th class="pb-3 text-right">Pendapatan</th>
+                    <th class="pb-3 text-right">Biaya</th>
+                    <th class="pb-3 text-right">Laba</th>
+                    <th class="pb-3 text-right">Margin (%)</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y">
+                {{ range .CatProfits }}
+                <tr>
+                    <td class="py-3 font-medium capitalize">{{ .NamaCategory }}</td>
+                    <td class="py-3 text-right">Rp {{ printf "%.0f" .Pendapatan }}</td>
+                    <td class="py-3 text-right">Rp {{ printf "%.0f" .Biaya }}</td>
+                    <td class="py-3 text-right text-success">Rp {{ printf "%.0f" .Laba }}</td>
+                    <td class="py-3 text-right text-success">{{ printf "%.1f" .Margin }}%</td>
+                </tr>
+                {{ else }}
+                <tr>
+                    <td colspan="5" class="py-3 text-center text-gray-500">Belum ada data</td>
+                </tr>
+                {{ end }}
+                <tr class="font-bold border-t">
+                    <td class="pt-3">TOTAL</td>
+                    <td class="pt-3 text-right">Rp {{ printf "%.0f" .TotalPendapatan }}</td>
+                    <td class="pt-3 text-right">Rp {{ printf "%.0f" .TotalBiaya }}</td>
+                    <td class="pt-3 text-right text-success">Rp {{ printf "%.0f" .TotalLaba }}</td>
+                    <td class="pt-3 text-right text-success">{{ printf "%.1f" .TotalMargin }}%</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-semibold text-gray-800">Transaksi Harian Terakhir</h2>
+            <a href="/kasir" class="text-primary hover:text-secondary text-sm">Lihat Semua →</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                <tr class="text-left text-gray-500 text-sm border-b">
+                    <th class="pb-3">Tanggal</th>
+                    <th class="pb-3">No. Transaksi</th>
+                    <th class="pb-3">Kasir</th>
+                    <th class="pb-3">Metode</th>
+                    <th class="pb-3 text-right">Total</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y">
+                {{ range .RecentTrx }}
+                <tr>
+                    <td class="py-3">{{ .CreatedAt.Format "02 Jan 2006" }}</td>
+                    <td class="py-3">{{ .NoFaktur }}</td>
+                    <td class="py-3">{{ .UserUID }}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded text-xs uppercase
+                        {{ if eq .MetodePembayaran "tunai" }}bg-green-100 text-green-800
+                        {{ else if eq .MetodePembayaran "qris" }}bg-yellow-100 text-yellow-800
+                        {{ else }}bg-blue-100 text-blue-800{{ end }}">
+                        {{ .MetodePembayaran }}
+                        </span>
+                    </td>
+                    <td class="py-3 text-right">Rp {{ printf "%.0f" .TotalBelanja }}</td>
+                </tr>
+                {{ else }}
+                <tr>
+                    <td colspan="5" class="py-3 text-center text-gray-500">Belum ada transaksi</td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="daily-modal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Pilih Tanggal</h3>
+            <button onclick="closeModal('daily-modal')" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+        </div>
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal</label>
+                <input type="date" id="daily-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('daily-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">Batal</button>
+                <button type="button" onclick="printDailyReport()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-sm">Cetak Laporan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="weekly-modal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Pilih Minggu</h3>
+            <button onclick="closeModal('weekly-modal')" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+        </div>
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Minggu ke-</label>
+                <select id="weekly-week" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="1">Minggu 1</option>
+                    <option value="2" selected>Minggu 2</option>
+                    <option value="3">Minggu 3</option>
+                    <option value="4">Minggu 4</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('weekly-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">Batal</button>
+                <button type="button" onclick="printWeeklyReport()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-sm">Cetak Laporan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="monthly-modal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Pilih Bulan</h3>
+            <button onclick="closeModal('monthly-modal')" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+        </div>
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Bulan & Tahun</label>
+                <input type="month" id="monthly-month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('monthly-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">Batal</button>
+                <button type="button" onclick="printMonthlyReport()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-sm">Cetak Laporan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="product-modal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Pilih Produk</h3>
+            <button onclick="closeModal('product-modal')" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+        </div>
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Produk</label>
+                <select id="product-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="">Semua Produk</option>
+                    <option value="1">Buku Tulis</option>
+                    <option value="2">Pensil</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Periode</label>
+                <select id="product-period" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="daily">Harian</option>
+                    <option value="weekly">Mingguan</option>
+                    <option value="monthly" selected>Bulanan</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('product-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">Batal</button>
+                <button type="button" onclick="printProductReport()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-sm">Cetak Laporan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="profit-loss-modal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Pilih Periode Laba Rugi</h3>
+            <button onclick="closeModal('profit-loss-modal')" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+        </div>
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Periode</label>
+                <select id="profit-loss-period" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="monthly" selected>Bulanan</option>
+                    <option value="quarterly">Triwulanan</option>
+                    <option value="yearly">Tahunan</option>
+                </select>
+            </div>
+            <div id="profit-loss-date-fields">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Bulan & Tahun</label>
+                <input type="month" id="profit-loss-month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"/>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('profit-loss-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">Batal</button>
+                <button type="button" onclick="printProfitLossReport()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-sm">Cetak Laporan</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // --- 1. RENDER CHART.JS ---
+    function initDashboardCharts() {
+        // Karena HTMX memuat CDN secara dinamis, kita harus memastikan
+        // library Chart.js sudah siap sebelum menggambar grafik.
+        if (typeof Chart === 'undefined') {
+            setTimeout(initDashboardCharts, 50); // Coba lagi dalam 50ms
+            return;
+        }
+
+        const chartLabels = [{{ range .ChartLabels }}"{{.}}",{{end}}];
+        const chartRevenues = [{{ range .ChartRevenues }}{{.}},{{end}}];
+        const chartProfits = [{{ range .ChartProfits }}{{.}},{{end}}];
+
+        const ctxSales = document.getElementById('salesTrendChart');
+        if (ctxSales) {
+            new Chart(ctxSales.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Penjualan (Rp)',
+                        data: chartRevenues,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        const ctxProfit = document.getElementById('profitLossChart');
+        if (ctxProfit) {
+            new Chart(ctxProfit.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        { label: 'Penjualan', data: chartRevenues, backgroundColor: '#93c5fd' },
+                        { label: 'Laba Bersih', data: chartProfits, backgroundColor: '#10b981' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }
+
+    // Eksekusi fungsi langsung. HTMX akan otomatis menjalankan ini saat halaman di-load.
+    initDashboardCharts();
+
+
+    // --- 2. MODAL & REPORT LOGIC ---
+    function showModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function showPeriodModal(type) {
+        if (type === 'daily') {
+            document.getElementById('daily-date').valueAsDate = new Date();
+            showModal('daily-modal');
+        } else if (type === 'weekly') {
+            showModal('weekly-modal');
+        } else if (type === 'monthly') {
+            const today = new Date();
+            const yyyyMm = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('monthly-month').value = yyyyMm;
+            showModal('monthly-modal');
+        }
+    }
+
+    function showProductModal() { showModal('product-modal'); }
+
+    function showProfitLossModal() {
+        const today = new Date();
+        const yyyyMm = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('profit-loss-month').value = yyyyMm;
+        showModal('profit-loss-modal');
+    }
+
+    window.onclick = function(event) {
+        const modals = ['daily-modal', 'weekly-modal', 'monthly-modal', 'product-modal', 'profit-loss-modal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (event.target === modal) modal.style.display = 'none';
+        });
+    };
+
+    function askFormatAndDownload(type, dateStr) {
+        if (!dateStr) return alert("Pilih tanggal/periode terlebih dahulu!");
+        if (confirm("Klik OK untuk Cetak EXCEL, atau 'Cancel' untuk Cetak PDF")) {
+            window.location.href = `/reports/export?type=${type}&format=excel&date=${dateStr}`;
+        } else {
+            window.location.href = `/reports/export?type=${type}&format=pdf&date=${dateStr}`;
+        }
+    }
+
+    function printDailyReport() {
+        const date = document.getElementById('daily-date').value;
+        askFormatAndDownload('daily', date);
+        closeModal('daily-modal');
+    }
+
+    function printWeeklyReport() {
+        alert("Fitur Mingguan dalam pengembangan, silakan gunakan Bulanan.");
+        closeModal('weekly-modal');
+    }
+
+    function printMonthlyReport() {
+        const month = document.getElementById('monthly-month').value;
+        askFormatAndDownload('monthly', month);
+        closeModal('monthly-modal');
+    }
+
+    function printProductReport() {
+        alert("Fitur Laporan per Produk dalam pengembangan.");
+        closeModal('product-modal');
+    }
+
+    function printProfitLossReport() {
+        const month = document.getElementById('profit-loss-month').value;
+        askFormatAndDownload('monthly', month);
+        closeModal('profit-loss-modal');
+    }
+
+    function exportReportTable(format) {
+        const today = new Date();
+        const month = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0');
+        window.location.href = `/reports/export?type=monthly&format=${format.toLowerCase()}&date=${month}`;
+    }
+</script>

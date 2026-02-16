@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ .Title }} - SMP N 1 Sragen</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#f59e0b',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        light: '#f8fafc'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+<div id="sidebar" class="sidebar bg-white shadow-lg fixed left-0 top-16 overflow-y-auto z-30">
+    <div class="p-4">
+        <div class="flex items-center space-x-3 mb-6">
+            <div class="bg-primary text-white p-2 rounded-xl">
+                <i class="fas fa-school text-xl"></i>
+            </div>
+            <div id="school-name" class="overflow-hidden">
+                <h1 class="text-lg font-bold text-gray-800 whitespace-nowrap">SMP N 1 Sragen</h1>
+                <p class="text-xs text-gray-500 truncate">Koperasi Sekolah</p>
+            </div>
+        </div>
+
+        <nav class="space-y-1">
+            <a href="/dashboard" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium active"
+               hx-get="/dashboard" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-home w-5 text-center"></i>
+                <span class="nav-text">Dashboard</span>
+            </a>
+            {{ if eq .Role "administrator"}}
+            <a href="/manage_users" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium"
+               hx-get="/manage_users" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-users w-5 text-center"></i>
+                <span class="nav-text">Manajemen Pengguna</span>
+            </a>
+            {{end}}
+
+            {{ if or (eq .Role "administrator") (eq .Role "supervisor")}}
+            <a href="/manage_category" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium"
+               hx-get="/manage_category" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-tags w-5 text-center"></i>
+                <span class="nav-text">Manajemen Kategori</span>
+            </a>
+            <a href="/manage_product" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium"
+               hx-get="/manage_product" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-boxes w-5 text-center"></i>
+                <span class="nav-text">Manajemen Produk</span>
+            </a>
+            <a href="/manage_stock" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium"
+               hx-get="/manage_stock" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-warehouse w-5 text-center"></i>
+                <span class="nav-text">Manajemen Stok</span>
+            </a>
+            {{end}}
+
+            {{ if eq .Role "kasir"}}
+            <a href="/kasir" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium" target="_blank">
+                <i class="fas fa-cash-register w-5 text-center"></i>
+                <span class="nav-text">POS Kasir</span>
+            </a>
+            {{end}}
+
+            {{ if or (eq .Role "administrator") (eq .Role "supervisor")}}
+            <a href="/reports" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium"
+               hx-get="/reports" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-chart-line w-5 text-center"></i>
+                <span class="nav-text">Laporan & Analytics</span>
+            </a>
+            {{end}}
+
+            {{ if eq .Role "administrator"}}
+            <a href="/backup_restore" class="nav-item flex items-center space-x-3 px-3 py-2.5 text-gray-700 font-medium"
+               hx-get="/backup_restore" hx-target="#main-content" hx-push-url="true" onclick="setActiveNav(this)">
+                <i class="fas fa-database w-5 text-center"></i>
+                <span class="nav-text">Backup & Restore</span>
+            </a>
+            {{end}}
+        </nav>
+    </div>
+</div>
+
+<div id="main-wrapper" class="min-h-screen">
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-40 h-16">
+        <div class="container mx-auto px-6 h-full flex justify-between items-center">
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-600 focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <button id="toggle-sidebar-btn" class="hidden md:block p-2 text-gray-600 hover:text-primary focus:outline-none transition-colors">
+                    <i class="fas fa-chevron-left text-xl"></i>
+                </button>
+                <h1 id="page-title" class="text-lg md:text-xl font-bold text-gray-800 ml-2 truncate">
+                    {{ .Title }}
+                </h1>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <button class="p-2 text-gray-600 hover:text-primary relative transition-colors">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+
+                <div class="relative" id="user-menu-container">
+                    <button id="user-menu-btn" class="flex items-center space-x-3 focus:outline-none hover:bg-gray-50 p-1 rounded-lg transition-colors">
+                        <div class="text-right hidden md:block">
+                            <p class="font-medium text-gray-800 text-sm">{{.Role}}</p>
+                            <p class="text-xs text-gray-500">{{ .Nama_lengkap}}</p>
+                        </div>
+                        <img src="https://placehold.co/40x40/1e40af/white?text=AD" alt="Admin" class="rounded-full h-10 w-10 border border-gray-200"/>
+                        <i class="fas fa-chevron-down text-xs text-gray-400 hidden md:block"></i>
+                    </button>
+
+                    <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-100 transform origin-top-right transition-all duration-200">
+                        <div class="px-4 py-3 border-b border-gray-100 md:hidden">
+                            <p class="text-sm font-semibold text-gray-800">{{.Role}}</p>
+                            <p class="text-xs text-gray-500">{{ .Nama_lengkap}}</p>
+                        </div>
+
+                        <a href="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors">
+                            <i class="fas fa-user w-4 mr-2 text-gray-400"></i> Profile Saya
+                        </a>
+
+                        <div class="border-t border-gray-100 my-1"></div>
+
+                        <a href="/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <i class="fas fa-sign-out-alt w-4 mr-2"></i> Keluar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="content-area pt-24 px-6 pb-6 min-h-screen transition-all duration-300">
+        {{embed}}
+    </main>
+
+    <footer class="bg-gray-800 text-white py-4 mt-auto content-area transition-all duration-300">
+        <div class="container mx-auto px-6 text-center">
+            <p>© 2026 Koperasi SMP Negeri 1 Sragen. All rights reserved.</p>
+            <p class="text-gray-400 text-sm mt-1">Sistem POS Berbasis Web</p>
+        </div>
+    </footer>
+</div>
+
+<script src="/static/js/script.js"></script>
+
+<script>
+    const originalToggle = document.getElementById('toggle-sidebar-btn').onclick;
+
+    const footer = document.querySelector('footer');
+
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === "class") {
+                const mainClasses = document.getElementById('main-content').className;
+                if (mainClasses.includes('collapsed')) {
+                    footer.classList.add('collapsed');
+                } else {
+                    footer.classList.remove('collapsed');
+                }
+
+                if (mainClasses.includes('mobile-shifted')) {
+                    footer.classList.add('mobile-shifted');
+                } else {
+                    footer.classList.remove('mobile-shifted');
+                }
+            }
+        });
+    });
+
+    observer.observe(document.getElementById('main-content'), {
+        attributes: true
+    });
+
+    const userMenuBtn = document.getElementById('user-menu-btn');
+    const userDropdown = document.getElementById('user-dropdown');
+    const userMenuContainer = document.getElementById('user-menu-container');
+
+    userMenuBtn.addEventListener('click', function(e) {
+        e.stopPropagation(); // Mencegah event bubbling ke document
+        userDropdown.classList.toggle('hidden');
+        const chevron = this.querySelector('.fa-chevron-down');
+        if(chevron) {
+            if (!userDropdown.classList.contains('hidden')) {
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                chevron.style.transform = 'rotate(0deg)';
+            }
+            chevron.style.transition = 'transform 0.2s';
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!userMenuContainer.contains(e.target)) {
+            userDropdown.classList.add('hidden');
+            const chevron = userMenuBtn.querySelector('.fa-chevron-down');
+            if(chevron) {
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+    });
+</script>
+</body>
+</html>
