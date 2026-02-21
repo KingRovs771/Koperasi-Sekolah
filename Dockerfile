@@ -1,5 +1,5 @@
 # Tahap 1: Build Aplikasi
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 
 # Copy go.mod dan go.sum lalu download dependencies
