@@ -17,14 +17,16 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load(".env")
+	if err != nil {
 		log.Fatal("Error loading .env file")
+		log.Println("Info: File .env tidak ditemukan, menggunakan variabel sistem (OS Env).")
 	}
 
 	config.Init()
 	config.InitSession()
 
-	err := config.DB.AutoMigrate(
+	err = config.DB.AutoMigrate(
 		&models.BackupRestore{},
 		&models.Category{},
 		&models.MutasiStock{},
