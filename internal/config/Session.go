@@ -15,7 +15,7 @@ var Store *session.Store
 
 func InitSession() {
 	redisAddres := os.Getenv("REDIS_ADDRESS")
-	host := "localhost"
+	host := os.Getenv("REDIS_ADDRESS")
 	port := 6379
 	if h, p, err := net.SplitHostPort(redisAddres); err == nil {
 		host = h
