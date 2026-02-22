@@ -1,34 +1,37 @@
-# Tahap 1: Build Aplikasi
-FROM golang:1.25-alpine AS builder
+# Gunakan base image golang untuk build
+FROM golang:1.25 AS builder
+
 WORKDIR /app
 
-# Copy go.mod dan go.sum lalu download dependencies
+# Copy go.mod dan go.sum dulu untuk caching dependency
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy seluruh source code
+# Copy semua source code
 COPY . .
 
-# Build binary aplikasi
-RUN CGO_ENABLED=0 GOOS=linux go build -o kopsis-app main.go
+# Build binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
 
-# Tahap 2: Runner (Image super ringan)
-FROM alpine:latest
+# Stage kedua: image ringan untuk menjalankan binary
+FROM alpine:3.19
+
 WORKDIR /app
 
-# Install zona waktu dan client PostgreSQL (untuk fitur Backup & Restore Anda)
-RUN apk --no-cache add ca-certificates tzdata postgresql-client
-ENV TZ=Asia/Jakarta
+# Install ca-certificates untuk koneksi TLS
+RUN apk add --no-cache ca-certificates
 
-# Copy file hasil build dari tahap 1
-COPY --from=builder /app/kopsis-app .
+# Copy binary dari stage builder
+COPY --from=builder /app/main .
 
-# Copy folder statis dan views (sesuai struktur Anda: folder 'web')
-COPY --from=builder /app/web ./web
+# Copy folder web, uploads, storage, dll
+COPY ./web ./web
+COPY ./uploads ./uploads
+COPY ./storage ./storage
+COPY .env .env
 
-# Buat folder penyimpanan agar tidak error saat upload/backup
-RUN mkdir -p /app/storage/backups /app/uploads
+# Expose port
+EXPOSE 3000
 
-EXPOSE 8080
-
-CMD ["./kopsis-app"]
+# Jalankan aplikasi
+CMD ["./main"]
