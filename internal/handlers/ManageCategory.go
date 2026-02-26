@@ -108,10 +108,18 @@ func DeleteCategory(c *fiber.Ctx) error {
 	uid := c.Params("uid")
 	var category models.Category
 
+	// 1. Cari dulu datanya
 	if err := config.DB.Where("uid = ?", uid).First(&category).Error; err != nil {
 		return c.Status(404).JSON(fiber.Map{
-			"Error":   err,
+			"Error":   err.Error(),
 			"Message": "Category Not Found",
+		})
+	}
+
+	// 2. PERBAIKAN: Hapus dari database (Sebelumnya baris ini tidak ada)
+	if err := config.DB.Delete(&category).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"Error": err.Error(),
 		})
 	}
 

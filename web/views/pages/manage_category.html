@@ -119,37 +119,36 @@
       </div>
     </div>
   </div>
-
   <div id="categories-container" class="category-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     {{ range .Data }}
     <div class="category-card bg-white rounded-xl p-5">
       <div class="text-center mb-4">
         <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-          <i class="fas fa-tags text-blue-600 text-2xl"></i>
+          <i class="fas fa-{{ if .Icon }}{{ .Icon }}{{ else }}tags{{ end }} text-blue-600 text-2xl"></i>
         </div>
-        <h3 class="font-semibold text-gray-800">{{ .NamaCategory}}</h3>
+        <h3 class="font-semibold text-gray-800">{{ .NamaCategory }}</h3>
       </div>
       <div class="space-y-2 mb-4 text-sm">
-        <div class="flex justify-between">
-          <span class="text-gray-600">Produk:</span>
-          <span class="font-medium">45</span>
-        </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-600">Status:</span>
-          <span class="flex items-center text-green-600 font-medium">
-                        <span class="status-indicator bg-green-500"></span> Aktif
-                    </span>
+          {{ if eq .Status "active" }}
+          <span class="flex items-center text-green-600 font-medium"><span class="status-indicator bg-green-500"></span> Aktif</span>
+          {{ else }}
+          <span class="flex items-center text-red-600 font-medium"><span class="status-indicator bg-red-500"></span> Nonaktif</span>
+          {{ end }}
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-600">Dibuat:</span>
-          <span class="text-sm">15 Jan 2026</span>
+          <span class="text-gray-600">Deskripsi:</span>
+          <span class="text-xs truncate max-w-[100px]">{{ .Description }}</span>
         </div>
       </div>
       <div class="flex action-buttons gap-2">
-        <button class="flex-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-xs" onclick="showEditCategoryModal('1')">
+        <button class="flex-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition text-xs"
+                onclick="showEditCategoryModal('{{ .UID }}', '{{ .NamaCategory }}', '{{ .Description }}', '{{ .Icon }}', '{{ .Status }}')">
           <i class="fas fa-edit mr-1"></i> Edit
         </button>
-        <button class="px-3 py-2 bg-danger text-white rounded-lg hover:bg-red-700 transition text-xs" onclick="deleteCategory('1')">
+        <button class="px-3 py-2 bg-danger text-white rounded-lg hover:bg-red-700 transition text-xs"
+                onclick="deleteCategory('{{ .UID }}')">
           <i class="fas fa-trash"></i>
         </button>
       </div>
@@ -164,35 +163,32 @@
       <h3 class="text-lg font-semibold text-gray-800">Tambah Kategori Baru</h3>
       <button onclick="hideAddCategoryModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
     </div>
-    <form class="space-y-4">
+    <form id="form-add" class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Nama Kategori *</label>
-        <input type="text" placeholder="Contoh: Alat Tulis" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+        <input type="text" id="add-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-        <textarea placeholder="Deskripsi kategori (opsional)" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+        <textarea id="add-desc" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Ikon Kategori</label>
-        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
-          <option value="pencil">📝 Alat Tulis</option>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Ikon Kategori (FontAwesome)</label>
+        <select id="add-icon" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+          <option value="pencil-alt">📝 Alat Tulis</option>
           <option value="book">📚 Buku</option>
           <option value="cookie">🍪 Snack</option>
-          <option value="glass">🥤 Minuman</option>
+          <option value="glass-whiskey">🥤 Minuman</option>
           <option value="tshirt">👕 Seragam</option>
-          <option value="futbol">⚽ Olahraga</option>
-          <option value="laptop">💻 Elektronik</option>
-          <option value="medkit">💊 Kesehatan</option>
         </select>
       </div>
       <div class="flex items-center">
-        <input type="checkbox" id="category-active" checked class="rounded border-gray-300 text-primary focus:ring-primary">
-        <label for="category-active" class="ml-2 text-sm text-gray-700">Status Aktif</label>
+        <input type="checkbox" id="add-active" checked class="rounded border-gray-300 text-primary focus:ring-primary">
+        <label for="add-active" class="ml-2 text-sm text-gray-700">Status Aktif</label>
       </div>
       <div class="flex justify-end space-x-3">
-        <button type="button" onclick="hideAddCategoryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700">Simpan</button>
+        <button type="button" onclick="hideAddCategoryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">Batal</button>
+        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg">Simpan</button>
       </div>
     </form>
   </div>
@@ -204,35 +200,32 @@
       <h3 class="text-lg font-semibold text-gray-800">Edit Kategori</h3>
       <button onclick="hideEditCategoryModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
     </div>
-    <form class="space-y-4">
+    <form id="form-edit" class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Nama Kategori *</label>
-        <input type="text" value="Alat Tulis" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+        <input type="text" id="edit-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-        <textarea placeholder="Deskripsi kategori" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">Kategori untuk semua alat tulis sekolah</textarea>
+        <textarea id="edit-desc" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"></textarea>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Ikon Kategori</label>
-        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
-          <option value="pencil" selected>📝 Alat Tulis</option>
+        <select id="edit-icon" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+          <option value="pencil-alt">📝 Alat Tulis</option>
           <option value="book">📚 Buku</option>
           <option value="cookie">🍪 Snack</option>
-          <option value="glass">🥤 Minuman</option>
+          <option value="glass-whiskey">🥤 Minuman</option>
           <option value="tshirt">👕 Seragam</option>
-          <option value="futbol">⚽ Olahraga</option>
-          <option value="laptop">💻 Elektronik</option>
-          <option value="medkit">💊 Kesehatan</option>
         </select>
       </div>
       <div class="flex items-center">
-        <input type="checkbox" id="edit-category-active" checked class="rounded border-gray-300 text-primary focus:ring-primary">
-        <label for="edit-category-active" class="ml-2 text-sm text-gray-700">Status Aktif</label>
+        <input type="checkbox" id="edit-active" class="rounded border-gray-300 text-primary focus:ring-primary">
+        <label for="edit-active" class="ml-2 text-sm text-gray-700">Status Aktif</label>
       </div>
       <div class="flex justify-end space-x-3">
-        <button type="button" onclick="hideEditCategoryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700">Simpan Perubahan</button>
+        <button type="button" onclick="hideEditCategoryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">Batal</button>
+        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg">Simpan Perubahan</button>
       </div>
     </form>
   </div>
@@ -244,10 +237,10 @@
       <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
     </div>
     <h3 class="text-lg font-semibold text-gray-800 mb-2">Konfirmasi Hapus</h3>
-    <p class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus kategori ini? Semua produk dalam kategori ini akan dipindahkan ke kategori default.</p>
+    <p class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus kategori ini?</p>
     <div class="flex justify-center space-x-3">
-      <button onclick="hideDeleteCategoryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Batal</button>
-      <button onclick="confirmDeleteCategory()" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-red-700">Hapus</button>
+      <button onclick="hideDeleteCategoryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">Batal</button>
+      <button id="btn-confirm-delete" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-red-700">Hapus</button>
     </div>
   </div>
 </div>
@@ -255,65 +248,124 @@
 <script>
   let currentCategoryId = null;
 
-  // Modal Functions
+  // Sesuaikan URL ini dengan rute Fiber Anda!
+  // Misalnya jika rutenya r.Post("/api/categories", CreateCategory)
+  const API_URL = '/categories';
+
+  // ================= TAMPILAN MODAL =================
   function showAddCategoryModal() {
+    document.getElementById('form-add').reset();
     document.getElementById('add-category-modal').classList.add('active');
   }
+  function hideAddCategoryModal() { document.getElementById('add-category-modal').classList.remove('active'); }
 
-  function hideAddCategoryModal() {
-    document.getElementById('add-category-modal').classList.remove('active');
-  }
+  // Isi form edit secara otomatis saat tombol ditekan
+  function showEditCategoryModal(uid, name, desc, icon, status) {
+    currentCategoryId = uid;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-desc').value = desc;
+    document.getElementById('edit-icon').value = icon;
+    document.getElementById('edit-active').checked = (status === 'active');
 
-  function showEditCategoryModal(categoryId) {
-    currentCategoryId = categoryId;
     document.getElementById('edit-category-modal').classList.add('active');
   }
+  function hideEditCategoryModal() { document.getElementById('edit-category-modal').classList.remove('active'); }
 
-  function hideEditCategoryModal() {
-    document.getElementById('edit-category-modal').classList.remove('active');
-  }
-
-  function deleteCategory(categoryId) {
-    currentCategoryId = categoryId;
+  function deleteCategory(uid) {
+    currentCategoryId = uid;
     document.getElementById('delete-category-modal').classList.add('active');
   }
+  function hideDeleteCategoryModal() { document.getElementById('delete-category-modal').classList.remove('active'); }
 
-  function hideDeleteCategoryModal() {
-    document.getElementById('delete-category-modal').classList.remove('active');
-  }
+  // ================= PROSES AJAX (FETCH API) =================
 
-  function confirmDeleteCategory() {
-    console.log('Deleting category:', currentCategoryId);
-    alert(`Kategori berhasil dihapus!`);
-    hideDeleteCategoryModal();
-  }
+  // 1. TAMBAH (CREATE)
+  document.getElementById('form-add').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Mencegah form reload halaman
 
-  // Close Modals on Click Outside
-  window.onclick = function(event) {
-    const addModal = document.getElementById('add-category-modal');
-    const editModal = document.getElementById('edit-category-modal');
-    const deleteModal = document.getElementById('delete-category-modal');
+    const payload = {
+      name_category: document.getElementById('add-name').value,
+      description: document.getElementById('add-desc').value,
+      icon: document.getElementById('add-icon').value,
+      status: document.getElementById('add-active').checked ? "active" : "inactive"
+    };
 
-    if (event.target === addModal) hideAddCategoryModal();
-    if (event.target === editModal) hideEditCategoryModal();
-    if (event.target === deleteModal) hideDeleteCategoryModal();
-  };
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-  // Filter Logic
-  const searchInput = document.getElementById('search-input');
-
-  searchInput.addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase().trim();
-    const categories = document.querySelectorAll('.category-card');
-
-    categories.forEach(category => {
-      const categoryName = category.querySelector('h3').textContent.toLowerCase();
-
-      if (searchTerm === '' || categoryName.includes(searchTerm)) {
-        category.style.display = 'block';
+      if (response.ok) {
+        hideAddCategoryModal();
+        window.location.reload(); // Refresh halaman agar data baru muncul
       } else {
-        category.style.display = 'none';
+        alert("Gagal menambahkan kategori.");
       }
-    });
+    } catch (error) {
+      console.error(error);
+    }
   });
+
+  // 2. EDIT (UPDATE)
+  document.getElementById('form-edit').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const payload = {
+      name_category: document.getElementById('edit-name').value,
+      description: document.getElementById('edit-desc').value,
+      icon: document.getElementById('edit-icon').value,
+      status: document.getElementById('edit-active').checked ? "active" : "inactive"
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/${currentCategoryId}`, {
+        method: 'PUT', // Sesuaikan dengan method router Golang Anda (bisa juga PATCH)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        hideEditCategoryModal();
+        window.location.reload();
+      } else {
+        alert("Gagal mengupdate kategori.");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  // 3. HAPUS (DELETE)
+  document.getElementById('btn-confirm-delete').addEventListener('click', async function() {
+    try {
+      const response = await fetch(`${API_URL}/${currentCategoryId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        hideDeleteCategoryModal();
+        window.location.reload();
+      } else {
+        alert("Gagal menghapus kategori.");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  // Filter Search
+  const searchInput = document.getElementById('search-input');
+  if(searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase().trim();
+      const categories = document.querySelectorAll('.category-card');
+
+      categories.forEach(category => {
+        const categoryName = category.querySelector('h3').textContent.toLowerCase();
+        category.style.display = (searchTerm === '' || categoryName.includes(searchTerm)) ? 'block' : 'none';
+      });
+    });
+  }
 </script>
