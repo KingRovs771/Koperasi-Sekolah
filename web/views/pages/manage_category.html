@@ -248,9 +248,7 @@
 <script>
   let currentCategoryId = null;
 
-  // Sesuaikan URL ini dengan rute Fiber Anda!
-  // Misalnya jika rutenya r.Post("/api/categories", CreateCategory)
-  const API_URL = '/categories';
+  const API_URL = '/manage_category';
 
   // ================= TAMPILAN MODAL =================
   function showAddCategoryModal() {
@@ -281,7 +279,7 @@
 
   // 1. TAMBAH (CREATE)
   document.getElementById('form-add').addEventListener('submit', async function(e) {
-    e.preventDefault(); // Mencegah form reload halaman
+    e.preventDefault();
 
     const payload = {
       name_category: document.getElementById('add-name').value,
@@ -299,7 +297,7 @@
 
       if (response.ok) {
         hideAddCategoryModal();
-        window.location.reload(); // Refresh halaman agar data baru muncul
+        window.location.reload();
       } else {
         alert("Gagal menambahkan kategori.");
       }
