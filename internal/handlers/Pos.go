@@ -42,7 +42,7 @@ func CheckOutProcess(c *fiber.Ctx) error {
 	}
 
 	sess, _ := config.Store.Get(c)
-	userUID := sess.Get("users_uid").(string)
+	userUID := sess.Get("users_uid")
 
 	tx := config.DB.Begin()
 
