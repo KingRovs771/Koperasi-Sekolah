@@ -41,8 +41,15 @@ func CheckOutProcess(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid Data"})
 	}
 
-	sess, _ := config.Store.Get(c)
-	userUID := sess.Get("users_uid")
+	sess, err := config.Store.Get(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal membaca sesi sistem"})
+	}
+	uidInterface := sess.Get("users_uid")
+	if uidInterface == nil {
+		return c.Status(401).JSON(fiber.Map{"error": "Sesi kasir tidak ditemukan atau sudah habis. Silakan login ulang."})
+	}
+	userUID := uidInterface.(string)
 
 	tx := config.DB.Begin()
 
