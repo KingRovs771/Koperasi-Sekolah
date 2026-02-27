@@ -49,18 +49,33 @@ func GetCategories(c *fiber.Ctx) error {
 }
 
 func CreateCategory(c *fiber.Ctx) error {
-	category := new(models.Category)
-	if err := c.BodyParser(category); err != nil {
+	type CreateInput struct {
+		NameCategory string `json:"name_category"`
+		Icon         string `json:"icon"`
+		Description  string `json:"description"`
+		Status       string `json:"status"`
+	}
+
+	input := new(CreateInput)
+	if err := c.BodyParser(input); err != nil {
 		return c.Status(500).JSON(fiber.Map{
-			"Error": err,
+			"Error": err.Error(),
 		})
+	}
+
+	category := models.Category{
+		NamaCategory: input.NameCategory,
+		Icon:         input.Icon,
+		Description:  input.Description,
+		Status:       input.Status,
 	}
 
 	if err := config.DB.Create(&category).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{
-			"Error": err,
+			"Error": err.Error(),
 		})
 	}
+
 	return c.Status(200).JSON(fiber.Map{
 		"Message": "Category Created Successfully",
 		"Data":    category,
@@ -78,7 +93,7 @@ func UpdateCategory(c *fiber.Ctx) error {
 	uid := c.Params("uid")
 	var category models.Category
 
-	if err := config.DB.Where("uid = ?", uid).First(&category).Error; err != nil {
+	if err := config.DB.Where("CategoryUID = ?", uid).First(&category).Error; err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"Error": err,
 		})
@@ -109,7 +124,7 @@ func DeleteCategory(c *fiber.Ctx) error {
 	var category models.Category
 
 	// 1. Cari dulu datanya
-	if err := config.DB.Where("uid = ?", uid).First(&category).Error; err != nil {
+	if err := config.DB.Where("CategoryUID = ?", uid).First(&category).Error; err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"Error":   err.Error(),
 			"Message": "Category Not Found",
