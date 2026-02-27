@@ -81,9 +81,9 @@ func main() {
 	DashboardRoutes.Delete("/users/:uid", handlers.DeleteUser)
 	//Category
 	DashboardRoutes.Get("/manage_category", handlers.GetCategories)
-	DashboardRoutes.Post("/manage_category", handlers.CreateCategory)
-	DashboardRoutes.Put("/manage_category/:uid", handlers.UpdateCategory)
-	DashboardRoutes.Delete("/manage_category/:uid", handlers.DeleteCategory)
+	DashboardRoutes.Post("/categories", handlers.CreateCategory)
+	DashboardRoutes.Put("/categories/:uid", handlers.UpdateCategory)
+	DashboardRoutes.Delete("/categories/:uid", handlers.DeleteCategory)
 	//Product
 	DashboardRoutes.Get("/manage_product", handlers.GetManageProducts)
 	DashboardRoutes.Post("/products", handlers.CreateProduct)
